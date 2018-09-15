@@ -1,8 +1,9 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.2.61'
     id 'org.jetbrains.dokka' version '0.9.16'
-    id 'com.jfrog.bintray' version '1.8.0'
-    id 'maven'
+    id 'com.jfrog.bintray' version '1.8.4'
+    id 'maven-publish'
+    id 'signing'
 }
 
 group 'io.opencubes'
@@ -24,56 +25,7 @@ compileKotlin {
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
-bintray {
-    user = bintrayUser
-    key = bintrayKey
-    configurations = ['archives']
-    pkg {
-        repo = "maven"
-        name = project.name
-        websiteUrl = 'https://github.com/ocpu/ws-kotlin'
-        vcsUrl = "https://github.com/ocpu/ws-kotlin.git"
-        licenses = ['MIT']
-//        publish = true
-        version {
-            name = project.version
-            vcsTag = project.version
-        }
-    }
-}
-task createPom {
-    doLast {
-        pom {
-            project {
-                packaging "jar"
-                groupId project.group
-                artifactId archivesBaseName
-                version project.version
-                name project.name
-                description 'A WebSocket implementation'
-                url 'https://github.com/ocpu/ws-kotlin'
-                licenses {
-                    license {
-                        name 'MIT'
-                        distribution 'repo'
-                    }
-                }
-                developers {
-                    developer {
-                        id "ocpu"
-                        name "Martin Hövre"
-                        email "martin.hovre@opencubes.io"
-                    }
-                }
-                scm {
-                    connection "https://github.com/ocpu/ws-kotlin.git"
-                    developerConnection "https://github.com/ocpu/ws-kotlin.git"
-                    url 'https://github.com/ocpu/ws-kotlin'
-                }
-            }
-        }.writeTo("$buildDir/pom.xml")
-    }
-}
+
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
@@ -83,18 +35,76 @@ dokka {
     outputFormat = 'html'
     outputDirectory = "$buildDir/javadoc"
 }
-task dokkaJavadoc(type: org.jetbrains.dokka.gradle.DokkaTask) {
-    outputFormat = 'javadoc'
-    outputDirectory = "$buildDir/javadoc"
-}
 
-task javadocJar(type: Jar, dependsOn: dokkaJavadoc) {
+task javadocJar(type: Jar, dependsOn: dokka) {
     classifier = 'javadoc'
     from javadoc.destinationDir
 }
 
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-    archives file: file("$buildDir/pom.xml"), name: 'pom', builtBy: createPom
+publishing {
+    publications {
+        mavenKotlin(MavenPublication) {
+            artifactId = archivesBaseName
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom {
+                name = project.name
+                description = 'A WebSocket implementation'
+                url = 'https://github.com/ocpu/ws-kotlin#readme'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
+                        distribution = 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'ocpu'
+                        name = 'Martin Hövre'
+                        email = 'martin.hovre@opencubes.io'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/ocpu/ws-kotlin.git'
+                    developerConnection = 'scm:git:ssh://github.com:ocpu/ws-kotlin.git'
+                    url = 'http://github.com/ocpu/ws-kotlin/tree/master'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+        }
+    }
+}
+
+signing {
+    useGpgCmd()
+    sign publishing.publications.mavenKotlin
+}
+
+bintray {
+    user = bintrayUser
+    key = bintrayKey
+    publications = ['mavenKotlin']
+    pkg {
+        repo = 'maven'
+        name = project.name
+        websiteUrl = 'https://github.com/ocpu/ws-kotlin'
+        issueTrackerUrl = 'https://github.com/ocpu/ws-kotlin/issues'
+        vcsUrl = 'https://github.com/ocpu/ws-kotlin.git'
+        licenses = ['MIT']
+//        publish = true
+        githubRepo = 'ocpu/ws-kotlin'
+        version {
+            name = project.version
+            vcsTag = project.version
+            gpg {
+                sign = true
+                passphrase = property("signing.password")
+            }
+        }
+    }
 }
