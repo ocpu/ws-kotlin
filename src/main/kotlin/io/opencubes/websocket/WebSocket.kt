@@ -6,6 +6,7 @@ import java.io.IOException
 import java.net.Socket
 import java.net.URI
 import javax.net.SocketFactory
+import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 import kotlin.concurrent.thread
 
@@ -51,8 +52,8 @@ class WebSocket private constructor(private val socket: Socket, private var uri:
           }
           headers.clear()
         } while (true)
-        if ("Sec-WebSocket-Accept" !in headers ||
-            Crypto.hash("sha1").update(key + SERVER_APPENDIX).digestBase64() != headers["Sec-WebSocket-Accept"])
+        if ("sec-websocket-accept" !in headers ||
+            Crypto.hash("sha1").update(key + SERVER_APPENDIX).digestBase64() != headers["sec-websocket-accept"])
           throw IOException("Server did not handle the request correctly")
 
         openListeners.forEach(OpenListener::invoke)
@@ -182,11 +183,14 @@ class WebSocket private constructor(private val socket: Socket, private var uri:
 
     private fun getSocket(uri: URI): Socket {
       val port = if (uri.port != -1) uri.port else when (uri.scheme) {
-        "wss" -> 433
+        "wss" -> 443
         else -> 80
       }
       return when (uri.scheme) {
-        "wss" -> SSLSocketFactory.getDefault().createSocket(uri.host, port)
+        "wss" -> SSLSocketFactory.getDefault().createSocket(uri.host, port).also {
+          it as SSLSocket
+          it.startHandshake()
+        }
         "ws" -> SocketFactory.getDefault().createSocket(uri.host, port)
         else -> throw Error("Missing ws scheme part (ws:// or wss://)")
       }

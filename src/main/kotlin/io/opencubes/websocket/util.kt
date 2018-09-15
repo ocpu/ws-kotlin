@@ -59,7 +59,7 @@ fun sendResponse(stream: OutputStream, code: Int, vararg headers: Pair<String, S
 
 private val RESPONSE_STATUS_LINE = Regex("HTTP/1.1\\s+(\\d{3})")
 private val REQUEST_STATUS_LINE = Regex("(\\w+)\\s+([^\\s]+)\\s+HTTP/1.1")
-private val HEADER_FIELD = Regex("([^:]+):\\s+(\\d{3})")
+private val HEADER_FIELD = Regex("([^:]+):\\s+(.+)")
 /**Handles the receiving of a HTTP response. */
 fun handleResponse(stream: InputStream, headers: MutableMap<String, String>): Int {
   val reader = stream.bufferedReader()
