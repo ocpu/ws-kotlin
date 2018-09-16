@@ -34,6 +34,8 @@ class WebSocket private constructor(private val socket: Socket, private var uri:
       if (uri != null) {
         val key = Crypto.base64(Crypto.nextBytes(16))
         sendRequest(outStream, uri!!, "GET",
+            "Connection" to "Upgrade",
+            "Upgrade" to "websocket",
             "Sec-WebSocket-Key" to key,
             "Sec-WebSocket-Version" to "13"
         )
@@ -44,6 +46,8 @@ class WebSocket private constructor(private val socket: Socket, private var uri:
           else if (code in 300 until 400) {
             uri = URI(headers["location"])
             sendRequest(outStream, uri!!, "GET",
+                "Connection" to "Upgrade",
+                "Upgrade" to "websocket",
                 "Sec-WebSocket-Key" to key,
                 "Sec-WebSocket-Version" to "13"
             )
