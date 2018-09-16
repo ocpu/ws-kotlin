@@ -99,10 +99,6 @@ class WebSocketFrame(
     }
 
     /**Reads [size] amounts och bytes from the [InputStream] */
-    fun InputStream.read(size: Int): ByteArray {
-      val array = ByteArray(size)
-      read(array, 0, size)
-      return array
-    }
+    fun InputStream.read(size: Int) = ByteArray(size) { read().toByte() }
   }
 }
